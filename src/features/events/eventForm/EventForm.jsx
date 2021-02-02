@@ -1,5 +1,5 @@
 /* global google */
-import React from "react";
+import React, { useState } from "react";
 import {
   Button,
   Grid,
@@ -7,12 +7,12 @@ import {
   Segment,
   Divider,
   Icon,
+  Confirm,
 } from "semantic-ui-react";
 import { Formik, Form } from "formik";
-import cuid from "cuid";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { createEvent, updateEvent } from "../eventActions";
+import { listenToEvents } from "../eventActions";
 import * as Yup from "yup";
 import MyTextInput from "../../../app/common/form/MyTextInput";
 import MyTextArea from "../../../app/common/form/MyTextArea";
@@ -20,12 +20,26 @@ import MySelectInput from "../../../app/common/form/MySelectInput";
 import { categoryData } from "../../../app/api/categoryOptions";
 import MyDateInput from "../../../app/common/form/MyDateInput";
 import MyPlaceInput from "../../../app/common/form/MyPlaceInput";
+import useFirestoreDoc from "../../../app/hooks/useFirestoreDoc";
+import {
+  addEventToFirestore,
+  cancelEventToggle,
+  listenToEventFromFirestore,
+  updateEventInFirestore,
+} from "../../../app/firestore/firestoreService";
+import LoadingComponent from "../../../app/layout/LoadingComponent";
+import { toast } from "react-toastify";
 
 const EventForm = ({ match, history }) => {
   const dispatch = useDispatch();
+
+  const [loadingCancel, setLoadingCancel] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const selectedEvent = useSelector((state) =>
     state.event.events.find((evt) => evt.id === match.params.id)
   );
+  const { loading, error } = useSelector((state) => state.async);
 
   const initialValues = selectedEvent ?? {
     title: "",
@@ -42,33 +56,56 @@ const EventForm = ({ match, history }) => {
     date: "",
   };
 
-  const handleFormSubmit = (values) => {
-    selectedEvent
-      ? dispatch(updateEvent({ ...selectedEvent, ...values }))
-      : dispatch(
-          createEvent({
-            ...values,
-            id: cuid(),
-            hostedBy: "Bob",
-            attendees: [],
-            hostPhotoURL: "/assets/user.png",
-          })
-        );
-    history.push("/events");
+  const handleFormSubmit = async (values, setSubmitting) => {
+    try {
+      selectedEvent
+        ? await updateEventInFirestore(values)
+        : await addEventToFirestore(values);
+      setSubmitting(false);
+      history.push("/events");
+    } catch (error) {
+      toast.error(error.message);
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancelToggle = async (event) => {
+    setConfirmOpen(false);
+    setLoadingCancel(true);
+    try {
+      await cancelEventToggle(event);
+      setLoadingCancel(false);
+    } catch (error) {
+      setLoadingCancel(true);
+      toast.error(error.message);
+    }
   };
 
   const validationSchema = Yup.object({
     title: Yup.string().required("You must provide a title"),
     category: Yup.string().required("You must provide a category"),
     description: Yup.string().required(),
-    city: Yup.object().shape({
-      address: Yup.string().required("City is required"),
-    }),
-    venue: Yup.object().shape({
-      address: Yup.string().required("Venue is required"),
-    }),
+    city: Yup.string().required(),
+    venue: Yup.string().required(),
+    // city: Yup.object().shape({
+    //   address: Yup.string().required("City is required"),
+    // }),
+    // venue: Yup.object().shape({
+    //   address: Yup.string().required("Venue is required"),
+    // }),
     date: Yup.string().required(),
   });
+
+  useFirestoreDoc({
+    shouldExcute: !!match.params.id,
+    query: () => listenToEventFromFirestore(match.params.id),
+    data: (event) => dispatch(listenToEvents([event])),
+    deps: [match.params.id, dispatch],
+  });
+
+  if (loading) return <LoadingComponent content="Loading event..." />;
+
+  if (error) return <Redirect to="/error" />;
 
   return (
     <Grid centered>
@@ -77,7 +114,9 @@ const EventForm = ({ match, history }) => {
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
-            onSubmit={(values) => handleFormSubmit(values)}
+            onSubmit={(values, { setSubmitting }) =>
+              handleFormSubmit(values, setSubmitting)
+            }
           >
             {({ isSubmitting, isValid, dirty, values }) => (
               <Form className="ui form">
@@ -106,7 +145,9 @@ const EventForm = ({ match, history }) => {
                     Event Location
                   </Header>
                 </Divider>
-                <MyPlaceInput name="city" placeholder="City" />
+                <MyTextInput name="city" placeholder="City" />
+                <MyTextInput name="venue" placeholder="Venue" />
+                {/* <MyPlaceInput name="city" placeholder="City" />
                 <MyPlaceInput
                   name="venue"
                   disabled={!values.city.latLng}
@@ -116,7 +157,7 @@ const EventForm = ({ match, history }) => {
                     radius: 1000,
                     types: ["establishment"],
                   }}
-                />
+                /> */}
                 <MyDateInput
                   name="date"
                   placeholderText="Date"
@@ -127,25 +168,49 @@ const EventForm = ({ match, history }) => {
                 />
 
                 <br />
-                <div style={{ display: "flex", justifyContent: "center" }}>
+                {selectedEvent && (
                   <Button
-                    disabled={isSubmitting}
-                    type="submit"
-                    content="Cancel"
-                    as={Link}
-                    to={`/events/`}
+                    loading={loadingCancel}
+                    type="button"
+                    floated="left"
+                    color={selectedEvent.isCancelled ? "green" : "red"}
+                    content={
+                      selectedEvent.isCancelled
+                        ? "Reactivate event"
+                        : "Cancel event"
+                    }
+                    onClick={() => setConfirmOpen(true)}
                   />
-                  <Button
-                    loading={isSubmitting}
-                    disabled={!isValid || !dirty || isSubmitting}
-                    type="submit"
-                    positive
-                    content="Submit"
-                  />
-                </div>
+                )}
+                <Button
+                  loading={isSubmitting}
+                  disabled={!isValid || !dirty || isSubmitting}
+                  type="submit"
+                  floated="right"
+                  positive
+                  content="Submit"
+                />
+                <Button
+                  disabled={isSubmitting}
+                  type="submit"
+                  floated="right"
+                  content="Cancel"
+                  as={Link}
+                  to={`/events`}
+                />
               </Form>
             )}
           </Formik>
+          <Confirm
+            content={
+              selectedEvent?.isCancelled
+                ? "This will reactivate the event - are you sure?"
+                : "This will cancel the event - are you sure?"
+            }
+            open={confirmOpen}
+            onCancel={() => setConfirmOpen(false)}
+            onConfirm={() => handleCancelToggle(selectedEvent)}
+          />
         </Segment>
       </Grid.Column>
     </Grid>
