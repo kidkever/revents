@@ -85,14 +85,12 @@ const EventForm = ({ match, history }) => {
     title: Yup.string().required("You must provide a title"),
     category: Yup.string().required("You must provide a category"),
     description: Yup.string().required(),
-    city: Yup.string().required(),
-    venue: Yup.string().required(),
-    // city: Yup.object().shape({
-    //   address: Yup.string().required("City is required"),
-    // }),
-    // venue: Yup.object().shape({
-    //   address: Yup.string().required("Venue is required"),
-    // }),
+    city: Yup.object().shape({
+      address: Yup.string().required("City is required"),
+    }),
+    venue: Yup.object().shape({
+      address: Yup.string().required("Venue is required"),
+    }),
     date: Yup.string().required(),
   });
 
@@ -145,9 +143,7 @@ const EventForm = ({ match, history }) => {
                     Event Location
                   </Header>
                 </Divider>
-                <MyTextInput name="city" placeholder="City" />
-                <MyTextInput name="venue" placeholder="Venue" />
-                {/* <MyPlaceInput name="city" placeholder="City" />
+                <MyPlaceInput name="city" placeholder="City" />
                 <MyPlaceInput
                   name="venue"
                   disabled={!values.city.latLng}
@@ -157,7 +153,7 @@ const EventForm = ({ match, history }) => {
                     radius: 1000,
                     types: ["establishment"],
                   }}
-                /> */}
+                />
                 <MyDateInput
                   name="date"
                   placeholderText="Date"
