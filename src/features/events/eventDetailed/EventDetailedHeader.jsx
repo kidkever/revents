@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Segment, Image, Item, Header, Button } from "semantic-ui-react";
 import { format } from "date-fns";
+import { toast } from "react-toastify";
+import {
+  addUserAttendance,
+  cancelUserAttendance,
+} from "../../../app/firestore/firestoreService";
 
 const eventImageStyle = {
   filter: "brightness(30%)",
@@ -16,7 +21,31 @@ const eventImageTextStyle = {
   color: "white",
 };
 
-const EventDetailedHeader = ({ event }) => {
+const EventDetailedHeader = ({ event, isHost, isGoing }) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleUserJoinEvent = async () => {
+    setLoading(true);
+    try {
+      await addUserAttendance(event);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUserCancelEvent = async () => {
+    setLoading(true);
+    try {
+      await cancelUserAttendance(event);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Segment.Group>
       <Segment basic attached="top" style={{ padding: "0" }}>
@@ -37,7 +66,14 @@ const EventDetailedHeader = ({ event }) => {
                 />
                 <p>{format(event.date, "MMMM d, yyyy h:mm a")}</p>
                 <p>
-                  Hosted by <strong>{event.hostedBy}</strong>
+                  Hosted by{" "}
+                  <strong>
+                    {" "}
+                    <Link to={`/profile/${event.hostUid}`}>
+                      {" "}
+                      {event.hostedBy}
+                    </Link>
+                  </strong>
                 </p>
               </Item.Content>
             </Item>
@@ -45,18 +81,34 @@ const EventDetailedHeader = ({ event }) => {
         </Segment>
       </Segment>
 
-      <Segment attached="bottom">
-        <Button>Cancel My Place</Button>
-        <Button color="teal">JOIN THIS EVENT</Button>
-
-        <Button
-          as={Link}
-          to={`/manage/${event.id}`}
-          color="orange"
-          floated="right"
-        >
-          Manage Event
-        </Button>
+      <Segment attached="bottom" clearing>
+        {!isHost && (
+          <>
+            {isGoing ? (
+              <Button loading={loading} onClick={handleUserCancelEvent}>
+                Cancel My Place
+              </Button>
+            ) : (
+              <Button
+                loading={loading}
+                onClick={handleUserJoinEvent}
+                color="teal"
+              >
+                JOIN THIS EVENT
+              </Button>
+            )}
+          </>
+        )}
+        {isHost && (
+          <Button
+            as={Link}
+            to={`/manage/${event.id}`}
+            color="orange"
+            floated="right"
+          >
+            Manage Event
+          </Button>
+        )}
       </Segment>
     </Segment.Group>
   );

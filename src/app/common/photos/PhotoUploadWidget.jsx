@@ -20,9 +20,9 @@ const PhotoUploadWidget = ({ setEditMode }) => {
     uploadTask.on(
       "state_changed",
       (snapshot) => {
-        // const progress =
-        //   (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        // console.log("upload is " + progress + "% done");
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log("upload is " + progress + "% done");
       },
       (error) => {
         toast.error(error.message);

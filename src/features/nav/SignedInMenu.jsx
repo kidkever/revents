@@ -24,9 +24,9 @@ const SignedInMenu = () => {
         <Image
           avatar
           spaced="right"
-          src={currentUserProfile.photoURL || "/assets/user.png"}
+          src={currentUserProfile?.photoURL || "/assets/user.png"}
         />
-        <Dropdown pointing="top left" text={currentUserProfile.displayName}>
+        <Dropdown pointing="top left" text={currentUserProfile?.displayName}>
           <Dropdown.Menu>
             <Dropdown.Item
               as={Link}
@@ -36,7 +36,7 @@ const SignedInMenu = () => {
             />
             <Dropdown.Item
               as={Link}
-              to={`/profile/${currentUserProfile.id}`}
+              to={`/profile/${currentUserProfile?.id}`}
               text="My Profile"
               icon="user"
             />
