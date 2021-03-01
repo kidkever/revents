@@ -86,3 +86,12 @@ export const addEventChatComment = (eventId, values) => {
 export const getEventChatRef = (eventId) => {
   return firebase.database().ref(`chat/${eventId}`).orderByKey();
 };
+
+export const getUserFeedRef = () => {
+  const user = firebase.auth().currentUser;
+  return firebase
+    .database()
+    .ref(`posts/${user?.uid}`)
+    .orderByKey()
+    .limitToLast(5);
+};
