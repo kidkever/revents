@@ -17,7 +17,6 @@ const EventsFeed = () => {
       if (!snapshot.exists()) return;
       const feed = firebaseObjectToArray(snapshot.val()).reverse();
       dispatch(listenToFeed(feed));
-      console.log(feed);
     });
     return () => getUserFeedRef().off();
   }, [dispatch]);

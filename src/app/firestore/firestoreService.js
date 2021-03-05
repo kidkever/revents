@@ -17,9 +17,17 @@ export const dataFromSnapshot = (snapshot) => {
   return { ...data, id: snapshot.id };
 };
 
-export const listenToEventsFromFirestore = (predicate) => {
+export const fetchEventsFromFirestore = (
+  predicate,
+  limit,
+  lastDocSnapshot = null
+) => {
   const user = firebase.auth().currentUser;
-  let eventsRef = db.collection("events").orderBy("date");
+  let eventsRef = db
+    .collection("events")
+    .orderBy("date")
+    .startAfter(lastDocSnapshot)
+    .limit(limit);
   switch (predicate.get("filter")) {
     case "isGoing":
       return eventsRef
@@ -126,10 +134,72 @@ export const getUserPhotos = (userUid) => {
 
 export const setMainPhoto = async (photo) => {
   const user = firebase.auth().currentUser;
+  const today = new Date();
+  const eventDocQuery = db
+    .collection("events")
+    .where("attendeeIds", "array-contains", user.uid)
+    .where("date", ">=", today);
+
+  const userFollowingRef = db
+    .collection("following")
+    .doc(user.uid)
+    .collection("userFollowing");
+
+  const batch = db.batch();
+
+  batch.update(db.collection("users").doc(user.uid), {
+    photoURL: photo.url,
+  });
   try {
-    await db.collection("users").doc(user.uid).update({
-      photoURL: photo.url,
+    const eventsQuerySnap = await eventDocQuery.get();
+    for (let i = 0; i < eventsQuerySnap.docs.length; i++) {
+      let eventDoc = eventsQuerySnap.docs[i];
+      // host photo
+      if (eventDoc.data().hostUid === user.uid) {
+        batch.update(eventsQuerySnap.docs[i].ref, {
+          hostPhotoURL: photo.url,
+        });
+      }
+      // attendee photo
+      batch.update(eventsQuerySnap.docs[i].ref, {
+        attendees: eventDoc.data().attendees.filter((attendee) => {
+          if (attendee.id === user.uid) {
+            attendee.photoURL = photo.url;
+          }
+          return attendee;
+        }),
+      });
+
+      // chat photo
+      let eventId = eventDoc.id;
+      var query = firebase.database().ref(`chat/${eventId}`);
+      query.once("value").then((snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+          var key = childSnapshot.key;
+          var childData = childSnapshot.val();
+          if (childData.uid === user.uid) {
+            firebase
+              .database()
+              .ref(`chat/${eventId}/${key}`)
+              .update({ photoURL: photo.url });
+          }
+        });
+      });
+    }
+
+    // follower/following on other profiles
+    const userFollowingSnap = await userFollowingRef.get();
+    userFollowingSnap.docs.forEach((docRef) => {
+      let followingDocRef = db
+        .collection("following")
+        .doc(docRef.id)
+        .collection("userFollowers")
+        .doc(user.uid);
+      batch.update(followingDocRef, { photoURL: photo.url });
     });
+
+    await batch.commit();
+
     return await user.updateProfile({
       photoURL: photo.url,
     });

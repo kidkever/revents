@@ -12,7 +12,7 @@ import {
 import { Formik, Form } from "formik";
 import { Link, Redirect } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { listenToEvents } from "../eventActions";
+import { listenToSelectedEvent } from "../eventActions";
 import * as Yup from "yup";
 import MyTextInput from "../../../app/common/form/MyTextInput";
 import MyTextArea from "../../../app/common/form/MyTextArea";
@@ -36,9 +36,7 @@ const EventForm = ({ match, history }) => {
   const [loadingCancel, setLoadingCancel] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const selectedEvent = useSelector((state) =>
-    state.event.events.find((evt) => evt.id === match.params.id)
-  );
+  const { selectedEvent } = useSelector((state) => state.event);
   const { loading, error } = useSelector((state) => state.async);
 
   const initialValues = selectedEvent ?? {
@@ -97,7 +95,7 @@ const EventForm = ({ match, history }) => {
   useFirestoreDoc({
     shouldExcute: !!match.params.id,
     query: () => listenToEventFromFirestore(match.params.id),
-    data: (event) => dispatch(listenToEvents([event])),
+    data: (event) => dispatch(listenToSelectedEvent(event)),
     deps: [match.params.id, dispatch],
   });
 
