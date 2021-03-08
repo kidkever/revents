@@ -20,6 +20,7 @@ const EventDetailedChat = ({ eventId }) => {
     commentId: null,
   });
   const { comments } = useSelector((state) => state.event);
+  const { authenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
     getEventChatRef(eventId).on("value", (snapshot) => {
@@ -45,114 +46,122 @@ const EventDetailedChat = ({ eventId }) => {
         color="teal"
         style={{ border: "none" }}
       >
-        <Header>Chat about this event</Header>
+        <Header>
+          {authenticated ? "Chat about this event" : "Sign in to view and chat"}
+        </Header>
       </Segment>
 
-      <Segment attached>
-        <Comment.Group style={{ maxHeight: 300, maxWidth: "100%" }}>
-          <ScrollableFeed>
-            {createDataTree(comments).map((comment) => (
-              <Comment key={comment.id}>
-                <Comment.Avatar src={comment.photoURL || "/assets/user.png"} />
-                <Comment.Content>
-                  <Comment.Author as={Link} to={`/profile/${comment.uid}`}>
-                    {comment.displayName}
-                  </Comment.Author>
-                  <Comment.Metadata>
-                    <div>{formatDistance(comment.date, new Date())}</div>
-                  </Comment.Metadata>
-                  <Comment.Text>
-                    {comment.text.split("\n").map((text, i) => (
-                      <span key={i}>
-                        {text}
-                        <br />
-                      </span>
-                    ))}
-                  </Comment.Text>
-                  <Comment.Actions>
-                    <Comment.Action
-                      onClick={() =>
-                        setShowReplyForm({
-                          open: true,
-                          commentId: comment.id,
-                        })
-                      }
-                    >
-                      Reply
-                    </Comment.Action>
-                    {showReplyForm.open &&
-                      showReplyForm.commentId === comment.id && (
-                        <EventDetailedChatForm
-                          eventId={eventId}
-                          parentId={comment.id}
-                          closeForm={handleCloseReplyForm}
-                          parentComment={false}
-                        />
-                      )}
-                  </Comment.Actions>
-                </Comment.Content>
-                {comment.childNodes.length > 0 && (
-                  <Comment.Group>
-                    {comment.childNodes.map((child) => (
-                      <Comment key={child.id}>
-                        <Comment.Avatar
-                          src={child.photoURL || "/assets/user.png"}
-                        />
-                        <Comment.Content>
-                          <Comment.Author
-                            as={Link}
-                            to={`/profile/${child.uid}`}
-                          >
-                            {child.displayName}
-                          </Comment.Author>
-                          <Comment.Metadata>
-                            <div>{formatDistance(child.date, new Date())}</div>
-                          </Comment.Metadata>
-                          <Comment.Text>
-                            {child.text.split("\n").map((text, i) => (
-                              <span key={i}>
-                                {text}
-                                <br />
-                              </span>
-                            ))}
-                          </Comment.Text>
-                          <Comment.Actions>
-                            <Comment.Action
-                              onClick={() =>
-                                setShowReplyForm({
-                                  open: true,
-                                  commentId: child.id,
-                                })
-                              }
+      {authenticated && (
+        <Segment attached>
+          <Comment.Group style={{ maxHeight: 300, maxWidth: "100%" }}>
+            <ScrollableFeed>
+              {createDataTree(comments).map((comment) => (
+                <Comment key={comment.id}>
+                  <Comment.Avatar
+                    src={comment.photoURL || "/assets/user.png"}
+                  />
+                  <Comment.Content>
+                    <Comment.Author as={Link} to={`/profile/${comment.uid}`}>
+                      {comment.displayName}
+                    </Comment.Author>
+                    <Comment.Metadata>
+                      <div>{formatDistance(comment.date, new Date())}</div>
+                    </Comment.Metadata>
+                    <Comment.Text>
+                      {comment.text.split("\n").map((text, i) => (
+                        <span key={i}>
+                          {text}
+                          <br />
+                        </span>
+                      ))}
+                    </Comment.Text>
+                    <Comment.Actions>
+                      <Comment.Action
+                        onClick={() =>
+                          setShowReplyForm({
+                            open: true,
+                            commentId: comment.id,
+                          })
+                        }
+                      >
+                        Reply
+                      </Comment.Action>
+                      {showReplyForm.open &&
+                        showReplyForm.commentId === comment.id && (
+                          <EventDetailedChatForm
+                            eventId={eventId}
+                            parentId={comment.id}
+                            closeForm={handleCloseReplyForm}
+                            parentComment={false}
+                          />
+                        )}
+                    </Comment.Actions>
+                  </Comment.Content>
+                  {comment.childNodes.length > 0 && (
+                    <Comment.Group>
+                      {comment.childNodes.map((child) => (
+                        <Comment key={child.id}>
+                          <Comment.Avatar
+                            src={child.photoURL || "/assets/user.png"}
+                          />
+                          <Comment.Content>
+                            <Comment.Author
+                              as={Link}
+                              to={`/profile/${child.uid}`}
                             >
-                              Reply
-                            </Comment.Action>
-                            {showReplyForm.open &&
-                              showReplyForm.commentId === child.id && (
-                                <EventDetailedChatForm
-                                  eventId={eventId}
-                                  parentId={child.parentId}
-                                  closeForm={handleCloseReplyForm}
-                                  parentComment={false}
-                                />
-                              )}
-                          </Comment.Actions>
-                        </Comment.Content>
-                      </Comment>
-                    ))}
-                  </Comment.Group>
-                )}
-              </Comment>
-            ))}
-          </ScrollableFeed>
-        </Comment.Group>
-        <EventDetailedChatForm
-          eventId={eventId}
-          parentId={0}
-          closeForm={handleCloseReplyForm}
-          parentComment={true}
-        />
-      </Segment>
+                              {child.displayName}
+                            </Comment.Author>
+                            <Comment.Metadata>
+                              <div>
+                                {formatDistance(child.date, new Date())}
+                              </div>
+                            </Comment.Metadata>
+                            <Comment.Text>
+                              {child.text.split("\n").map((text, i) => (
+                                <span key={i}>
+                                  {text}
+                                  <br />
+                                </span>
+                              ))}
+                            </Comment.Text>
+                            <Comment.Actions>
+                              <Comment.Action
+                                onClick={() =>
+                                  setShowReplyForm({
+                                    open: true,
+                                    commentId: child.id,
+                                  })
+                                }
+                              >
+                                Reply
+                              </Comment.Action>
+                              {showReplyForm.open &&
+                                showReplyForm.commentId === child.id && (
+                                  <EventDetailedChatForm
+                                    eventId={eventId}
+                                    parentId={child.parentId}
+                                    closeForm={handleCloseReplyForm}
+                                    parentComment={false}
+                                  />
+                                )}
+                            </Comment.Actions>
+                          </Comment.Content>
+                        </Comment>
+                      ))}
+                    </Comment.Group>
+                  )}
+                </Comment>
+              ))}
+            </ScrollableFeed>
+          </Comment.Group>
+          <EventDetailedChatForm
+            eventId={eventId}
+            parentId={0}
+            closeForm={handleCloseReplyForm}
+            parentComment={true}
+          />
+        </Segment>
+      )}
     </>
   );
 };

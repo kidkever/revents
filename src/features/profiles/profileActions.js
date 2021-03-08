@@ -64,9 +64,9 @@ export const setUnfollowUser = () => {
   };
 };
 
-export const listenToFeed = feed => {
+export const listenToFeed = (feed) => {
   return {
     type: LISTEN_TO_FEED,
-    payload: feed
-  }
-}
+    payload: feed,
+  };
+};
