@@ -1,5 +1,5 @@
 /* global google */
-import React, { useState } from "react";
+import React from "react";
 import {
   Button,
   Grid,
@@ -7,7 +7,6 @@ import {
   Segment,
   Divider,
   Icon,
-  Confirm,
 } from "semantic-ui-react";
 import { Formik, Form } from "formik";
 import { Link, Redirect } from "react-router-dom";
@@ -23,7 +22,6 @@ import MyPlaceInput from "../../../app/common/form/MyPlaceInput";
 import useFirestoreDoc from "../../../app/hooks/useFirestoreDoc";
 import {
   addEventToFirestore,
-  cancelEventToggle,
   listenToEventFromFirestore,
   updateEventInFirestore,
 } from "../../../app/firestore/firestoreService";
@@ -32,9 +30,6 @@ import { toast } from "react-toastify";
 
 const EventForm = ({ match, history }) => {
   const dispatch = useDispatch();
-
-  const [loadingCancel, setLoadingCancel] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { selectedEvent } = useSelector((state) => state.event);
   const { loading, error } = useSelector((state) => state.async);
@@ -67,18 +62,6 @@ const EventForm = ({ match, history }) => {
     }
   };
 
-  const handleCancelToggle = async (event) => {
-    setConfirmOpen(false);
-    setLoadingCancel(true);
-    try {
-      await cancelEventToggle(event);
-      setLoadingCancel(false);
-    } catch (error) {
-      setLoadingCancel(true);
-      toast.error(error.message);
-    }
-  };
-
   const validationSchema = Yup.object({
     title: Yup.string().required("You must provide a title"),
     category: Yup.string().required("You must provide a category"),
@@ -90,6 +73,7 @@ const EventForm = ({ match, history }) => {
       address: Yup.string().required("Venue is required"),
     }),
     date: Yup.string().required(),
+    isCancelled: Yup.boolean(),
   });
 
   useFirestoreDoc({
@@ -105,7 +89,7 @@ const EventForm = ({ match, history }) => {
 
   return (
     <Grid centered>
-      <Grid.Column width={8}>
+      <Grid.Column mobile={12} tablet={10} computer={8}>
         <Segment clearing>
           <Formik
             initialValues={initialValues}
@@ -114,97 +98,76 @@ const EventForm = ({ match, history }) => {
               handleFormSubmit(values, setSubmitting)
             }
           >
-            {({ isSubmitting, isValid, dirty, values }) => (
-              <Form className="ui form">
-                <Divider horizontal>
-                  <Header sub color="teal">
-                    <Icon name="group" />
-                    Event Details
-                  </Header>
-                </Divider>
-                <MyTextInput name="title" placeholder="Event Title" />
-                <MySelectInput
-                  name="category"
-                  placeholder="Category"
-                  options={categoryData}
-                />
-                <MyTextArea
-                  name="description"
-                  placeholder="Description"
-                  rows={3}
-                />
-
-                <br />
-                <Divider horizontal>
-                  <Header sub color="teal">
-                    <Icon name="location arrow" />
-                    Event Location
-                  </Header>
-                </Divider>
-                <MyPlaceInput name="city" placeholder="City" />
-                <MyPlaceInput
-                  name="venue"
-                  disabled={!values.city.latLng}
-                  placeholder="Venue"
-                  options={{
-                    location: new google.maps.LatLng(values.city.latLng),
-                    radius: 1000,
-                    types: ["establishment"],
-                  }}
-                />
-                <MyDateInput
-                  name="date"
-                  placeholderText="Date"
-                  timeFormat="HH:mm"
-                  showTimeSelect
-                  timeCaption="time"
-                  dateFormat="MMMM d, yyyy h:mm a"
-                />
-
-                <br />
-                {selectedEvent && (
-                  <Button
-                    loading={loadingCancel}
-                    type="button"
-                    floated="left"
-                    color={selectedEvent.isCancelled ? "green" : "red"}
-                    content={
-                      selectedEvent.isCancelled
-                        ? "Reactivate event"
-                        : "Cancel event"
-                    }
-                    onClick={() => setConfirmOpen(true)}
+            {({ isSubmitting, dirty, isValid, values }) => {
+              return (
+                <Form className="ui form">
+                  <Divider horizontal>
+                    <Header sub color="teal">
+                      <Icon name="group" />
+                      Event Details
+                    </Header>
+                  </Divider>
+                  <MyTextInput name="title" placeholder="Event Title" />
+                  <MySelectInput
+                    name="category"
+                    placeholder="Category"
+                    options={categoryData}
                   />
-                )}
-                <Button
-                  loading={isSubmitting}
-                  disabled={!isValid || !dirty || isSubmitting}
-                  type="submit"
-                  floated="right"
-                  positive
-                  content="Submit"
-                />
-                <Button
-                  disabled={isSubmitting}
-                  type="submit"
-                  floated="right"
-                  content="Cancel"
-                  as={Link}
-                  to={`/events`}
-                />
-              </Form>
-            )}
+                  <MyTextArea
+                    name="description"
+                    placeholder="Description"
+                    rows={3}
+                  />
+
+                  <br />
+                  <Divider horizontal>
+                    <Header sub color="teal">
+                      <Icon name="location arrow" />
+                      Event Location
+                    </Header>
+                  </Divider>
+                  <MyPlaceInput name="city" placeholder="City" />
+                  <MyPlaceInput
+                    name="venue"
+                    disabled={!values.city.latLng}
+                    placeholder="Venue"
+                    options={{
+                      location: new google.maps.LatLng(values.city.latLng),
+                      radius: 1000,
+                      types: ["establishment"],
+                    }}
+                  />
+                  <MyDateInput
+                    name="date"
+                    placeholderText="Date"
+                    timeFormat="HH:mm"
+                    showTimeSelect
+                    timeCaption="time"
+                    dateFormat="MMMM d, yyyy h:mm a"
+                  />
+
+                  <br />
+
+                  <Button
+                    loading={isSubmitting}
+                    disabled={!isValid || !dirty || isSubmitting}
+                    type="submit"
+                    floated="right"
+                    positive
+                    content="Submit"
+                  />
+                  <Button
+                    disabled={isSubmitting}
+                    type="submit"
+                    floated="right"
+                    content="Cancel"
+                    as={Link}
+                    to={`/events`}
+                  />
+                </Form>
+              );
+            }}
           </Formik>
-          <Confirm
-            content={
-              selectedEvent?.isCancelled
-                ? "This will reactivate the event - are you sure?"
-                : "This will cancel the event - are you sure?"
-            }
-            open={confirmOpen}
-            onCancel={() => setConfirmOpen(false)}
-            onConfirm={() => handleCancelToggle(selectedEvent)}
-          />
         </Segment>
       </Grid.Column>
     </Grid>

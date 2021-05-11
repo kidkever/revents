@@ -1,10 +1,13 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Calendar from "react-calendar";
 import { Header, Menu } from "semantic-ui-react";
+import { setFilter, setStartDate } from "../eventActions";
 
-const EventFilters = ({ predicate, setPredicate, loading }) => {
+const EventFilters = ({ loading }) => {
+  const dispatch = useDispatch();
   const { authenticated } = useSelector((state) => state.auth);
+  const { filter, startDate } = useSelector((state) => state.event);
   return (
     <>
       {authenticated && (
@@ -12,28 +15,28 @@ const EventFilters = ({ predicate, setPredicate, loading }) => {
           <Header icon="filter" attached color="teal" content="Filters" />
           <Menu.Item
             content="All Events"
-            active={predicate.get("filter") === "all"}
-            onClick={() => setPredicate("filter", "all")}
+            active={filter === "all"}
+            onClick={() => dispatch(setFilter("all"))}
             disabled={loading}
           />
           <Menu.Item
             content="I'm going"
-            active={predicate.get("filter") === "isGoing"}
-            onClick={() => setPredicate("filter", "isGoing")}
+            active={filter === "isGoing"}
+            onClick={() => dispatch(setFilter("isGoing"))}
             disabled={loading}
           />
           <Menu.Item
             content="I'm hosting"
-            active={predicate.get("filter") === "isHosting"}
-            onClick={() => setPredicate("filter", "isHosting")}
+            active={filter === "isHosting"}
+            onClick={() => dispatch(setFilter("isHosting"))}
             disabled={loading}
           />
         </Menu>
       )}
       <Header icon="calendar" attached color="teal" content="Select date" />
       <Calendar
-        onChange={(date) => setPredicate("startDate", date)}
-        value={predicate.get("startDate") || new Date()}
+        onChange={(date) => dispatch(setStartDate(date))}
+        value={startDate || new Date()}
         tileDisabled={() => loading}
       />
     </>

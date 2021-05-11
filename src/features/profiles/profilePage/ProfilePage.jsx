@@ -10,29 +10,40 @@ import ProfileHeader from "./ProfileHeader";
 
 const ProfilePage = ({ match }) => {
   const dispatch = useDispatch();
-  const { selectedUserProfile } = useSelector((state) => state.profile);
+  const { selectedUserProfile, currentUserProfile } = useSelector(
+    (state) => state.profile
+  );
   const { currentUser } = useSelector((state) => state.auth);
   const { loading, error } = useSelector((state) => state.async);
 
+  let profile;
+
   useFirestoreDoc({
+    shouldExcute: match.params.id !== currentUser.uid,
     query: () => getUserProfile(match.params.id),
     data: (profile) => dispatch(listenToSelectedUserProfile(profile)),
     deps: [dispatch, match.params.id],
   });
 
-  if ((loading && !selectedUserProfile) || (!selectedUserProfile && !error))
+  if (match.params.id === currentUser.uid) {
+    profile = currentUserProfile;
+  } else {
+    profile = selectedUserProfile;
+  }
+
+  if ((loading && !profile) || (!profile && !error))
     return <LoadingComponent content="Loading Profile..." />;
 
   return (
     <Grid>
       <Grid.Column width={16}>
         <ProfileHeader
-          profile={selectedUserProfile}
-          isCurrentUser={currentUser.uid === selectedUserProfile.id}
+          profile={profile}
+          isCurrentUser={currentUser.uid === profile.id}
         />
         <ProfileContent
-          profile={selectedUserProfile}
-          isCurrentUser={currentUser.uid === selectedUserProfile.id}
+          profile={profile}
+          isCurrentUser={currentUser.uid === profile.id}
         />
       </Grid.Column>
     </Grid>

@@ -70,7 +70,7 @@ const ProfileHeader = ({ profile, isCurrentUser }) => {
   return (
     <Segment>
       <Grid>
-        <Grid.Column width={12}>
+        <Grid.Column mobile={16} tablet={10} computer={12}>
           <Item.Group>
             <Item>
               <Item.Image
@@ -88,8 +88,13 @@ const ProfileHeader = ({ profile, isCurrentUser }) => {
             </Item>
           </Item.Group>
         </Grid.Column>
-        <Grid.Column width={4}>
-          <Statistic.Group>
+        <Grid.Column
+          style={{ margin: "auto" }}
+          mobile={16}
+          tablet={6}
+          computer={4}
+        >
+          <Statistic.Group style={{ justifyContent: "center" }}>
             <Statistic label="Followers" value={profile.followerCount || 0} />
             <Statistic label="Following" value={profile.followingCount || 0} />
           </Statistic.Group>

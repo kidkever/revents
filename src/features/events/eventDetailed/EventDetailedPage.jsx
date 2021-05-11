@@ -33,7 +33,7 @@ const EventDetailedPage = ({ match }) => {
   if (error) return <Redirect to="/error" />;
 
   return (
-    <Grid>
+    <Grid stackable reversed="mobile vertically">
       <Grid.Column width={10}>
         <EventDetailedHeader event={event} isHost={isHost} isGoing={isGoing} />
         <EventDetailedInfo event={event} />

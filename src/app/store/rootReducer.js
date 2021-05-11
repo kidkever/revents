@@ -1,5 +1,4 @@
 import { combineReducers } from "redux";
-import { testReducer } from "../../features/sandbox/testReducer";
 import { eventReducer } from "../../features/events/eventReducer";
 import { modalReducer } from "../common/modals/modalReducer";
 import { authReducer } from "../../features/auth/authReducer";
@@ -10,7 +9,7 @@ import { connectRouter } from "connected-react-router";
 export const rootReducer = (history) =>
   combineReducers({
     router: connectRouter(history),
-    test: testReducer,
+
     event: eventReducer,
     modals: modalReducer,
     auth: authReducer,
