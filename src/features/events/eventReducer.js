@@ -10,6 +10,7 @@ import {
   SET_FILTER,
   SET_START_DATE,
   RETAIN_STATE,
+  CLEAR_SELECTED_EVENT,
 } from "./eventConstants";
 
 const initialState = {
@@ -64,6 +65,11 @@ export const eventReducer = (state = initialState, { type, payload }) => {
       return {
         ...state,
         selectedEvent: payload,
+      };
+    case CLEAR_SELECTED_EVENT:
+      return {
+        ...state,
+        selectedEvent: null,
       };
     case CLEAR_EVENTS:
       return {

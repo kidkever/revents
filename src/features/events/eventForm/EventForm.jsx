@@ -1,5 +1,5 @@
 /* global google */
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Button,
   Grid,
@@ -11,7 +11,7 @@ import {
 import { Formik, Form } from "formik";
 import { Link, Redirect } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { listenToSelectedEvent } from "../eventActions";
+import { clearSelectedEvent, listenToSelectedEvent } from "../eventActions";
 import * as Yup from "yup";
 import MyTextInput from "../../../app/common/form/MyTextInput";
 import MyTextArea from "../../../app/common/form/MyTextArea";
@@ -28,11 +28,16 @@ import {
 import LoadingComponent from "../../../app/layout/LoadingComponent";
 import { toast } from "react-toastify";
 
-const EventForm = ({ match, history }) => {
+const EventForm = ({ match, history, location }) => {
   const dispatch = useDispatch();
 
   const { selectedEvent } = useSelector((state) => state.event);
   const { loading, error } = useSelector((state) => state.async);
+
+  useEffect(() => {
+    if (location.pathname !== "/createEvent") return;
+    dispatch(clearSelectedEvent());
+  }, [dispatch, location.pathname]);
 
   const initialValues = selectedEvent ?? {
     title: "",
@@ -77,7 +82,9 @@ const EventForm = ({ match, history }) => {
   });
 
   useFirestoreDoc({
-    shouldExcute: !!match.params.id,
+    shouldExcute:
+      match.params.id !== selectedEvent?.id &&
+      location.pathname !== "/createEvent",
     query: () => listenToEventFromFirestore(match.params.id),
     data: (event) => dispatch(listenToSelectedEvent(event)),
     deps: [match.params.id, dispatch],
@@ -92,6 +99,7 @@ const EventForm = ({ match, history }) => {
       <Grid.Column mobile={12} tablet={10} computer={8}>
         <Segment clearing>
           <Formik
+            enableReinitialize
             initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={(values, { setSubmitting }) =>
@@ -144,6 +152,7 @@ const EventForm = ({ match, history }) => {
                     showTimeSelect
                     timeCaption="time"
                     dateFormat="MMMM d, yyyy h:mm a"
+                    autoComplete="off"
                   />
 
                   <br />
